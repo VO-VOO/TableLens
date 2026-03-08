@@ -1,9 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-APP_NAME="BaiduTableOCRApp"
-SRC="$ROOT/BaiduTableOCRApp/App.swift"
-PLIST="$ROOT/BaiduTableOCRApp/Info.plist"
+APP_NAME="TableLens"
+SRC="$ROOT/TableLens/App.swift"
+PLIST="$ROOT/TableLens/Info.plist"
 ICON_SVG="$ROOT/icon.svg"
 MENUBAR_ICON_SVG="$ROOT/MenuBarIconTemplate.svg"
 ICON_BUILD_DIR="$ROOT/.iconbuild"

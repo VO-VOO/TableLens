@@ -5,7 +5,7 @@ import Security
 import ScreenCaptureKit
 import UserNotifications
 
-let appServiceName = "BaiduTableOCRApp"
+let appServiceName = "TableLens"
 let keychainAccount = "settings-key"
 let defaultSaveDirectory = FileManager.default.homeDirectoryForCurrentUser
     .appendingPathComponent("Desktop")
@@ -245,7 +245,7 @@ final class HotKeyManager {
 
     func register(shortcut: HotkeyShortcut) throws {
         unregister()
-        var hotKeyID = EventHotKeyID(signature: OSType(0x54424F43), id: 1) // TBOC
+        let hotKeyID = EventHotKeyID(signature: OSType(0x54424F43), id: 1) // TBOC
         let status = RegisterEventHotKey(shortcut.keyCode, shortcut.modifiers, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
         guard status == noErr, hotKeyRef != nil else {
             hotKeyRef = nil
@@ -666,6 +666,7 @@ final class OverlayWindow: NSWindow {
     override var canBecomeMain: Bool { true }
 }
 
+@MainActor
 final class ScreenshotOverlayController: NSObject {
     private struct OverlayContext {
         let window: OverlayWindow
@@ -686,7 +687,8 @@ final class ScreenshotOverlayController: NSObject {
             return
         }
 
-        Task {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
             do {
                 let shareable = try await SCShareableContent.current
                 let displaysById = Dictionary(uniqueKeysWithValues: shareable.displays.map { ($0.displayID, $0) })
@@ -709,13 +711,9 @@ final class ScreenshotOverlayController: NSObject {
                     throw AppFailure.message("无法获取当前显示器内容。")
                 }
 
-                await MainActor.run {
-                    self.presentOverlays(captures: captures)
-                }
+                self.presentOverlays(captures: captures)
             } catch {
-                await MainActor.run {
-                    completion(.failure(error))
-                }
+                completion(.failure(error))
             }
         }
     }
@@ -1267,6 +1265,7 @@ final class NotificationHelper {
     }
 }
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let settingsStore = SecureSettingsStore.shared
     private var settings: AppSettings!
@@ -1295,13 +1294,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func checkPermissionsOnLaunch() {
-        Task { [weak self] in
+        Task { @MainActor [weak self] in
             do {
                 try await Self.primeScreenCapturePermissionIfNeeded()
             } catch {
-                await MainActor.run {
-                    self?.showPermissionAlert(String(describing: error))
-                }
+                self?.showPermissionAlert(String(describing: error))
             }
         }
     }

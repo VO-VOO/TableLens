@@ -29,11 +29,11 @@ scaled_ocr_outputs/
 .build/
 DerivedData/
 # Xcode user data
-BaiduTableOCRAppProject/BaiduTableOCRApp.xcodeproj/xcuserdata/
-BaiduTableOCRAppProject/BaiduTableOCRApp.xcodeproj/project.xcworkspace/xcuserdata/
+TableLens/TableLens.xcodeproj/xcuserdata/
+TableLens/TableLens.xcodeproj/project.xcworkspace/xcuserdata/
 # Local test images
 兰亭序.jpg
 截屏2026-03-08 10.54.09.png
 表格.png
-BaiduTableOCRAppProject/.iconbuild/
+TableLens/.iconbuild/
 .serena/
