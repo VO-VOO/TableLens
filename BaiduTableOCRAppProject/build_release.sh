@@ -10,6 +10,7 @@ DEST_APP="/Applications/$APP_NAME.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$PLIST" "$APP/Contents/Info.plist"
 swiftc "$SRC" \
+  -parse-as-library \
   -o "$APP/Contents/MacOS/$APP_NAME" \
   -framework Cocoa \
   -framework Carbon \

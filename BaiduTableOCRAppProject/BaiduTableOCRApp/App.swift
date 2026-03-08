@@ -3,6 +3,7 @@ import Carbon
 import CryptoKit
 import Security
 import ScreenCaptureKit
+import UserNotifications
 
 let appServiceName = "BaiduTableOCRApp"
 let keychainAccount = "settings-key"
@@ -242,10 +243,14 @@ final class HotKeyManager {
         installHandlerIfNeeded()
     }
 
-    func register(shortcut: HotkeyShortcut) {
+    func register(shortcut: HotkeyShortcut) throws {
         unregister()
         var hotKeyID = EventHotKeyID(signature: OSType(0x54424F43), id: 1) // TBOC
-        RegisterEventHotKey(shortcut.keyCode, shortcut.modifiers, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
+        let status = RegisterEventHotKey(shortcut.keyCode, shortcut.modifiers, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
+        guard status == noErr, hotKeyRef != nil else {
+            hotKeyRef = nil
+            throw AppFailure.message("全局热键注册失败，可能与系统或其他应用的快捷键冲突。")
+        }
     }
 
     func unregister() {
@@ -300,21 +305,25 @@ final class OCRService {
                 var comps = URLComponents(string: self.tableURL)!
                 comps.queryItems = [URLQueryItem(name: "access_token", value: accessToken)]
                 let json = try self.requestJSON(url: comps.url!, body: payload)
-                if let errorCode = json["error_code"] {
-                    throw AppFailure.message("Baidu OCR error: \(errorCode) \(json["error_msg"] ?? "")")
-                }
+
                 let saveDir = URL(fileURLWithPath: settings.saveDirectory, isDirectory: true)
                 try FileManager.default.createDirectory(at: saveDir, withIntermediateDirectories: true)
                 let timestamp = Self.timestamp()
                 let jsonURL = saveDir.appendingPathComponent("\(timestamp).json")
                 let excelURL = saveDir.appendingPathComponent("\(timestamp).xlsx")
-                let jsonData = try JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys])
-                try jsonData.write(to: jsonURL)
+
+                if let errorCode = json["error_code"] {
+                    try self.writeJSONLog(json, to: jsonURL)
+                    throw AppFailure.message("Baidu OCR error: \(errorCode) \(json["error_msg"] ?? "")。日志：\(jsonURL.path)")
+                }
+
                 guard let excelBase64 = json["excel_file"] as? String,
                       let excelData = Data(base64Encoded: excelBase64)
                 else {
-                    throw AppFailure.message("No excel_file returned.")
+                    try self.writeJSONLog(json, to: jsonURL)
+                    throw AppFailure.message("No excel_file returned. 日志：\(jsonURL.path)")
                 }
+
                 try excelData.write(to: excelURL)
                 DispatchQueue.main.async { completion(.success(excelURL)) }
             } catch {
@@ -395,6 +404,11 @@ final class OCRService {
         var allowed = CharacterSet.alphanumerics
         allowed.insert(charactersIn: "-._*")
         return string.addingPercentEncoding(withAllowedCharacters: allowed)?.replacingOccurrences(of: "%20", with: "+") ?? string
+    }
+
+    private func writeJSONLog(_ json: [String: Any], to url: URL) throws {
+        let data = try JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys])
+        try data.write(to: url)
     }
 
     private static func timestamp() -> String {
@@ -643,62 +657,50 @@ final class OverlayWindow: NSWindow {
 }
 
 final class ScreenshotOverlayController: NSObject {
-    private var window: NSWindow?
+    private struct OverlayContext {
+        let window: OverlayWindow
+        let screen: NSScreen
+        let display: SCDisplay
+    }
+
+    private var overlays: [OverlayContext] = []
     private var completion: ((Result<Data, Error>) -> Void)?
-    private var screen: NSScreen?
-    private var display: SCDisplay?
     private var localKeyMonitor: Any?
 
     func begin(completion: @escaping (Result<Data, Error>) -> Void) {
         self.completion = completion
 
-        let mouse = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? NSScreen.main
-        guard let screen else {
+        let screens = NSScreen.screens
+        guard !screens.isEmpty else {
             completion(.failure(AppFailure.message("没有可用屏幕。")))
             return
         }
-        self.screen = screen
-
-        guard let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
-            completion(.failure(AppFailure.message("无法确定当前屏幕。")))
-            return
-        }
-        let displayID = CGDirectDisplayID(screenNumber.uint32Value)
 
         Task {
             do {
                 let shareable = try await SCShareableContent.current
-                guard let display = shareable.displays.first(where: { $0.displayID == displayID }) else {
+                let displaysById = Dictionary(uniqueKeysWithValues: shareable.displays.map { ($0.displayID, $0) })
+                var captures: [(screen: NSScreen, display: SCDisplay, image: NSImage)] = []
+
+                for screen in screens {
+                    guard let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
+                        continue
+                    }
+                    let displayID = CGDirectDisplayID(screenNumber.uint32Value)
+                    guard let display = displaysById[displayID] else {
+                        continue
+                    }
+                    let cgImage = try await self.captureDisplayImage(display: display, sourceRect: nil)
+                    let image = NSImage(cgImage: cgImage, size: screen.frame.size)
+                    captures.append((screen: screen, display: display, image: image))
+                }
+
+                guard !captures.isEmpty else {
                     throw AppFailure.message("无法获取当前显示器内容。")
                 }
-                self.display = display
-                let cgImage = try await self.captureDisplayImage(display: display, sourceRect: nil)
-                let image = NSImage(cgImage: cgImage, size: screen.frame.size)
-                await MainActor.run {
-                    let window = OverlayWindow(contentRect: screen.frame, styleMask: .borderless, backing: .buffered, defer: false, screen: screen)
-                    window.isOpaque = false
-                    window.backgroundColor = .clear
-                    window.level = .screenSaver
-                    window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-                    window.acceptsMouseMovedEvents = true
-                    window.makeKeyAndOrderFront(nil)
-                    window.makeMain()
-                    window.orderFrontRegardless()
 
-                    let view = SelectionOverlayView(frame: CGRect(origin: .zero, size: screen.frame.size), image: image)
-                    view.onCancel = { [weak self] in self?.finish(.failure(AppFailure.message("已取消截图。"))) }
-                    view.onConfirm = { [weak self, weak window] rect in
-                        guard let self, let window else { return }
-                        self.captureSelection(rect: rect, in: window)
-                    }
-                    window.contentView = view
-                    self.window = window
-                    NSApp.activate(ignoringOtherApps: true)
-                    window.makeKey()
-                    window.makeMain()
-                    window.makeFirstResponder(view)
-                    self.installLocalKeyMonitor(for: view)
+                await MainActor.run {
+                    self.presentOverlays(captures: captures)
                 }
             } catch {
                 await MainActor.run {
@@ -708,9 +710,44 @@ final class ScreenshotOverlayController: NSObject {
         }
     }
 
-    private func installLocalKeyMonitor(for view: SelectionOverlayView) {
+    private func presentOverlays(captures: [(screen: NSScreen, display: SCDisplay, image: NSImage)]) {
+        closeAllOverlays()
+        NSApp.activate(ignoringOtherApps: true)
+
+        for (index, capture) in captures.enumerated() {
+            let screen = capture.screen
+            let window = OverlayWindow(contentRect: screen.frame, styleMask: .borderless, backing: .buffered, defer: false, screen: screen)
+            window.isOpaque = false
+            window.backgroundColor = .clear
+            window.level = .screenSaver
+            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            window.acceptsMouseMovedEvents = true
+            window.orderFrontRegardless()
+
+            let view = SelectionOverlayView(frame: CGRect(origin: .zero, size: screen.frame.size), image: capture.image)
+            view.onCancel = { [weak self] in self?.finish(.failure(AppFailure.message("已取消截图。"))) }
+            view.onConfirm = { [weak self, weak window] rect in
+                guard let self, let window else { return }
+                self.captureSelection(rect: rect, in: window)
+            }
+            window.contentView = view
+            overlays.append(OverlayContext(window: window, screen: screen, display: capture.display))
+
+            if index == 0 {
+                window.makeKeyAndOrderFront(nil)
+                window.makeMain()
+                window.makeFirstResponder(view)
+            }
+        }
+
+        installLocalKeyMonitor()
+    }
+
+    private func installLocalKeyMonitor() {
         removeLocalKeyMonitor()
-        localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { event in
+        localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
+            guard let self else { return event }
+            guard let view = self.activeSelectionView() else { return event }
             switch event.keyCode {
             case UInt16(kVK_Return):
                 view.confirmSelection()
@@ -724,6 +761,14 @@ final class ScreenshotOverlayController: NSObject {
         }
     }
 
+    private func activeSelectionView() -> SelectionOverlayView? {
+        if let keyWindow = NSApp.keyWindow as? OverlayWindow,
+           let view = keyWindow.contentView as? SelectionOverlayView {
+            return view
+        }
+        return overlays.first?.window.contentView as? SelectionOverlayView
+    }
+
     private func removeLocalKeyMonitor() {
         if let localKeyMonitor {
             NSEvent.removeMonitor(localKeyMonitor)
@@ -732,32 +777,31 @@ final class ScreenshotOverlayController: NSObject {
     }
 
     private func captureSelection(rect: CGRect, in window: NSWindow) {
-        guard let screen, let display else {
+        guard let context = overlays.first(where: { $0.window === window }) else {
             finish(.failure(AppFailure.message("显示器上下文丢失。")))
             return
         }
-        // NOTE: SelectionOverlayView 使用 isFlipped=true（原点左上），
-        // 需要先转为 window 坐标（原点左下）再转为 screen 坐标
-        let windowRect: CGRect
-        if let contentView = window.contentView {
-            windowRect = contentView.convert(rect, to: nil)
-        } else {
-            windowRect = rect
+
+        let localBounds = CGRect(origin: .zero, size: context.screen.frame.size)
+        let localRect = rect.standardized.intersection(localBounds)
+        guard !localRect.isNull, localRect.width >= 1, localRect.height >= 1 else {
+            finish(.failure(AppFailure.message("截图区域无效，请重新选择。")))
+            return
         }
-        let screenRect = window.convertToScreen(windowRect)
-        let localX = screenRect.origin.x - screen.frame.origin.x
-        let localY = screenRect.origin.y - screen.frame.origin.y
-        let scale = screen.backingScaleFactor
-        let sourceRect = CGRect(
-            x: localX * scale,
-            y: (screen.frame.height - localY - screenRect.height) * scale,
-            width: screenRect.width * scale,
-            height: screenRect.height * scale
-        )
+
+        let scaleX = CGFloat(context.display.width) / max(context.screen.frame.width, 1)
+        let scaleY = CGFloat(context.display.height) / max(context.screen.frame.height, 1)
+        let outputWidth = max(1, Int((localRect.width * scaleX).rounded()))
+        let outputHeight = max(1, Int((localRect.height * scaleY).rounded()))
+        let sourceRect = localRect
 
         Task {
             do {
-                let cgImage = try await self.captureDisplayImage(display: display, sourceRect: sourceRect)
+                let cgImage = try await self.captureDisplayImage(
+                    display: context.display,
+                    sourceRect: sourceRect,
+                    outputSize: CGSize(width: outputWidth, height: outputHeight)
+                )
                 let rep = NSBitmapImageRep(cgImage: cgImage)
                 guard let data = rep.representation(using: .png, properties: [:]) else {
                     throw AppFailure.message("无法编码截图 PNG 数据。")
@@ -773,7 +817,7 @@ final class ScreenshotOverlayController: NSObject {
         }
     }
 
-    private func captureDisplayImage(display: SCDisplay, sourceRect: CGRect?) async throws -> CGImage {
+    private func captureDisplayImage(display: SCDisplay, sourceRect: CGRect?, outputSize: CGSize? = nil) async throws -> CGImage {
         let filter = SCContentFilter(display: display, excludingApplications: [], exceptingWindows: [])
         let config = SCStreamConfiguration()
         config.width = display.width
@@ -781,17 +825,25 @@ final class ScreenshotOverlayController: NSObject {
         config.scalesToFit = false
         if let sourceRect {
             config.sourceRect = sourceRect
-            config.width = Int(sourceRect.width)
-            config.height = Int(sourceRect.height)
+            if let outputSize {
+                config.width = max(1, Int(outputSize.width.rounded()))
+                config.height = max(1, Int(outputSize.height.rounded()))
+            }
         }
         return try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+    }
+
+    private func closeAllOverlays() {
+        for overlay in overlays {
+            overlay.window.orderOut(nil)
+        }
+        overlays.removeAll()
     }
 
     /// NOTE: 截图完成或出错时统一清理资源
     private func finish(_ result: Result<Data, Error>) {
         removeLocalKeyMonitor()
-        window?.orderOut(nil)
-        window = nil
+        closeAllOverlays()
         completion?(result)
         completion = nil
     }
@@ -799,8 +851,7 @@ final class ScreenshotOverlayController: NSObject {
     /// NOTE: 外部取消当前截图流程，清理窗口和事件监听器，防止资源泄漏
     func cancel() {
         removeLocalKeyMonitor()
-        window?.orderOut(nil)
-        window = nil
+        closeAllOverlays()
         completion = nil
     }
 }
@@ -809,6 +860,7 @@ final class HotkeyRecorderField: NSTextField {
     var onRecord: ((String?) -> Void)?
     var onRecordingChanged: ((Bool) -> Void)?
     private(set) var isRecordingHotkey = false
+    private var keyMonitor: Any?
 
     override var acceptsFirstResponder: Bool { true }
 
@@ -817,47 +869,62 @@ final class HotkeyRecorderField: NSTextField {
         beginRecording()
     }
 
-    override func becomeFirstResponder() -> Bool {
-        let ok = super.becomeFirstResponder()
-        if ok { beginRecording() }
-        return ok
-    }
-
     func beginRecording() {
+        guard !isRecordingHotkey else { return }
         isRecordingHotkey = true
         stringValue = "请按下新热键"
         onRecordingChanged?(true)
-        currentEditor()?.selectedRange = NSRange(location: 0, length: stringValue.count)
+        window?.makeFirstResponder(self)
+        installKeyMonitor()
     }
 
-    override func textShouldBeginEditing(_ textObject: NSText) -> Bool { false }
-
-    override func keyDown(with event: NSEvent) {
-        guard isRecordingHotkey else {
-            super.keyDown(with: event)
-            return
+    private func installKeyMonitor() {
+        removeKeyMonitor()
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
+            guard let self, self.isRecordingHotkey else { return event }
+            return self.handleRecordingEvent(event)
         }
+    }
+
+    private func removeKeyMonitor() {
+        if let keyMonitor {
+            NSEvent.removeMonitor(keyMonitor)
+            self.keyMonitor = nil
+        }
+    }
+
+    private func finishRecording(_ value: String?) {
+        isRecordingHotkey = false
+        removeKeyMonitor()
+        onRecordingChanged?(false)
+        onRecord?(value)
+        window?.makeFirstResponder(nil)
+    }
+
+    private func handleRecordingEvent(_ event: NSEvent) -> NSEvent? {
         if event.keyCode == UInt16(kVK_Escape) {
-            isRecordingHotkey = false
-            onRecordingChanged?(false)
-            onRecord?(nil)
-            return
+            finishRecording(nil)
+            return nil
         }
         let filtered = event.modifierFlags.intersection([.control, .command, .option, .shift])
         guard !filtered.isEmpty else {
             NSSound.beep()
             onRecord?("__INVALID_NO_MODIFIER__")
-            return
+            return nil
         }
         guard let hotkey = HotkeyParser.describe(modifiers: filtered, keyCode: event.keyCode, characters: event.charactersIgnoringModifiers) else {
             NSSound.beep()
-            return
+            return nil
         }
-        isRecordingHotkey = false
         stringValue = hotkeyDisplayString(from: hotkey)
-        onRecordingChanged?(false)
-        onRecord?(hotkey)
-        window?.makeFirstResponder(nil)
+        finishRecording(hotkey)
+        return nil
+    }
+
+    override func textShouldBeginEditing(_ textObject: NSText) -> Bool { false }
+
+    deinit {
+        removeKeyMonitor()
     }
 }
 
@@ -945,7 +1012,7 @@ final class SettingsWindow: NSWindow {
 }
 
 final class SettingsWindowController: NSWindowController, NSTextFieldDelegate {
-    var onSettingsChanged: ((AppSettings) -> Void)?
+    var onSettingsChanged: ((AppSettings) -> Result<Void, Error>)?
     private var settings: AppSettings
     private let apiKeyRow = ToggleSecureInputRow()
     private let secretKeyRow = ToggleSecureInputRow()
@@ -1043,8 +1110,8 @@ final class SettingsWindowController: NSWindowController, NSTextFieldDelegate {
         stack.addArrangedSubview(statusLabel)
 
         saveDirField.delegate = self
-        apiKeyRow.onChange = { [weak self] value in self?.settings.apiKey = value; self?.persistChanges() }
-        secretKeyRow.onChange = { [weak self] value in self?.settings.secretKey = value; self?.persistChanges() }
+        apiKeyRow.onChange = { [weak self] _ in self?.schedulePersistChanges() }
+        secretKeyRow.onChange = { [weak self] _ in self?.schedulePersistChanges() }
     }
 
     private func makeLabel(_ text: String) -> NSTextField {
@@ -1102,37 +1169,80 @@ final class SettingsWindowController: NSWindowController, NSTextFieldDelegate {
         }
     }
 
-    func controlTextDidChange(_ obj: Notification) {
-        // NOTE: 防抖 0.5 秒，避免每次按键都触发加密保存和热键重注册
+    private func schedulePersistChanges() {
         saveTimer?.invalidate()
         saveTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
             self?.persistChanges()
         }
     }
 
+    func controlTextDidChange(_ obj: Notification) {
+        // NOTE: 防抖 0.5 秒，避免每次按键都触发加密保存和热键重注册
+        schedulePersistChanges()
+    }
+
     private func persistChanges() {
+        let previousSettings = settings
+
         settings.apiKey = apiKeyRow.stringValue
         settings.secretKey = secretKeyRow.stringValue
         settings.saveDirectory = saveDirField.stringValue.isEmpty ? defaultSaveDirectory.path : saveDirField.stringValue
         let newHotkey = settings.hotkey.isEmpty ? "control+p" : settings.hotkey
         settings.hotkey = newHotkey
+
+        if HotkeyParser.parse(newHotkey) == nil {
+            statusLabel.stringValue = "热键格式无效。"
+            statusLabel.textColor = .systemRed
+            settings = previousSettings
+            hotkeyField.stringValue = hotkeyDisplayString(from: previousSettings.hotkey)
+            return
+        }
+
         do {
-            try SecureSettingsStore.shared.save(settings)
-            onSettingsChanged?(settings)
-            if HotkeyParser.parse(newHotkey) == nil {
-                statusLabel.stringValue = "热键格式无效。"
-                statusLabel.textColor = .systemRed
-            } else {
-                hotkeyField.stringValue = hotkeyDisplayString(from: newHotkey)
-                hotkeyRecordButton.title = "录制"
-                hotkeyRecordButton.isEnabled = true
-                statusLabel.stringValue = "已保存。设置立即生效。"
-                statusLabel.textColor = .systemGreen
+            if let onSettingsChanged {
+                switch onSettingsChanged(settings) {
+                case .success:
+                    break
+                case .failure(let error):
+                    settings = previousSettings
+                    fillValues()
+                    statusLabel.stringValue = "保存失败：\(error)"
+                    statusLabel.textColor = .systemRed
+                    hotkeyRecordButton.title = "录制"
+                    hotkeyRecordButton.isEnabled = true
+                    return
+                }
             }
+
+            try SecureSettingsStore.shared.save(settings)
+            hotkeyField.stringValue = hotkeyDisplayString(from: newHotkey)
+            hotkeyRecordButton.title = "录制"
+            hotkeyRecordButton.isEnabled = true
+            statusLabel.stringValue = "已保存。设置立即生效。"
+            statusLabel.textColor = .systemGreen
         } catch {
+            settings = previousSettings
+            fillValues()
             statusLabel.stringValue = "保存失败：\(error)"
             statusLabel.textColor = .systemRed
         }
+    }
+}
+
+final class NotificationHelper {
+    static let shared = NotificationHelper()
+
+    func requestAuthorization() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+    }
+
+    func notify(title: String, body: String = "") {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
     }
 }
 
@@ -1146,9 +1256,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         settings = settingsStore.load()
+        NotificationHelper.shared.requestAuthorization()
         ensureSaveDirectoryExists()
         setupStatusItem()
-        applyHotkey()
+        do {
+            try applyHotkey()
+        } catch {
+            showError(String(describing: error))
+        }
         checkPermissionsOnLaunch()
         showSettings(nil)
     }
@@ -1161,7 +1276,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func checkPermissionsOnLaunch() {
         Task { [weak self] in
             do {
-                _ = try await Self.checkScreenCaptureAccess()
+                try await Self.primeScreenCapturePermissionIfNeeded()
             } catch {
                 await MainActor.run {
                     self?.showPermissionAlert(String(describing: error))
@@ -1170,12 +1285,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private static func checkScreenCaptureAccess() async throws -> Bool {
+    private static func primeScreenCapturePermissionIfNeeded() async throws {
         let shareable = try await SCShareableContent.current
-        if shareable.displays.isEmpty {
+        guard let display = shareable.displays.first else {
             throw AppFailure.message("未检测到可用的屏幕录制权限。请前往“系统设置 → 隐私与安全性 → 屏幕录制”为本 App 授权，然后重启 App。")
         }
-        return true
+
+        // NOTE: 仅做一次 2x2 的最小抓屏，用来在启动阶段触发系统授权弹窗，
+        // 避免用户进入截图层后被弹窗卡住无法点击“允许”。
+        let filter = SCContentFilter(display: display, excludingApplications: [], exceptingWindows: [])
+        let config = SCStreamConfiguration()
+        config.width = 2
+        config.height = 2
+        config.scalesToFit = false
+        config.sourceRect = CGRect(x: 0, y: 0, width: 2, height: 2)
+
+        do {
+            _ = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+        } catch {
+            throw AppFailure.message("当前尚未授予屏幕录制权限。请在系统弹窗中点击“允许”，或前往“系统设置 → 隐私与安全性 → 屏幕录制”为本 App 授权，然后重启 App。")
+        }
     }
 
     private func ensureSaveDirectoryExists() {
@@ -1195,12 +1324,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.menu = menu
     }
 
-    private func applyHotkey() {
-        let shortcut = HotkeyParser.parse(settings.hotkey) ?? HotkeyParser.parse("control+p")!
+    private func applyHotkey(_ hotkey: String? = nil) throws {
+        let resolvedHotkey = hotkey ?? settings.hotkey
+        let shortcut = HotkeyParser.parse(resolvedHotkey) ?? HotkeyParser.parse("control+p")!
         HotKeyManager.shared.onTrigger = { [weak self] in
             self?.startCapture(nil)
         }
-        HotKeyManager.shared.register(shortcut: shortcut)
+        try HotKeyManager.shared.register(shortcut: shortcut)
     }
 
     @objc private func startCapture(_ sender: Any?) {
@@ -1213,12 +1343,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 OCRService.shared.recognizeTable(imageData: data, settings: self?.settings ?? AppSettings()) { result in
                     switch result {
                     case .success(let excelURL):
+                        NotificationHelper.shared.notify(title: "识别成功", body: excelURL.lastPathComponent)
                         NSWorkspace.shared.activateFileViewerSelecting([excelURL])
                     case .failure(let error):
+                        NotificationHelper.shared.notify(title: "识别失败", body: String(describing: error))
                         self?.showError(String(describing: error))
                     }
                 }
             case .failure(let error):
+                NotificationHelper.shared.notify(title: "识别失败", body: String(describing: error))
                 self?.showError(String(describing: error))
             }
         }
@@ -1228,9 +1361,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if settingsWindowController == nil {
             let controller = SettingsWindowController(settings: settings)
             controller.onSettingsChanged = { [weak self] newSettings in
-                self?.settings = newSettings
-                self?.ensureSaveDirectoryExists()
-                self?.applyHotkey()
+                guard let self else { return .failure(AppFailure.message("应用状态不可用。")) }
+
+                do {
+                    if newSettings.hotkey != self.settings.hotkey {
+                        try self.applyHotkey(newSettings.hotkey)
+                    }
+                    self.settings = newSettings
+                    self.ensureSaveDirectoryExists()
+                    return .success(())
+                } catch {
+                    return .failure(error)
+                }
             }
             settingsWindowController = controller
         } else {
@@ -1275,7 +1417,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-let app = NSApplication.shared
-let delegate = AppDelegate()
-app.delegate = delegate
-app.run()
+@main
+final class BaiduTableOCRMain {
+    static func main() {
+        let app = NSApplication.shared
+        let delegate = AppDelegate()
+        app.delegate = delegate
+        app.run()
+    }
+}
