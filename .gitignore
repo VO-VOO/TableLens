@@ -28,3 +28,11 @@ scaled_ocr_outputs/
 # Swift / Xcode transient files
 .build/
 DerivedData/
+# Xcode user data
+BaiduTableOCRAppProject/BaiduTableOCRApp.xcodeproj/xcuserdata/
+BaiduTableOCRAppProject/BaiduTableOCRApp.xcodeproj/project.xcworkspace/xcuserdata/
+# Local test images
+兰亭序.jpg
+截屏2026-03-08 10.54.09.png
+表格.png
+BaiduTableOCRAppProject/.iconbuild/

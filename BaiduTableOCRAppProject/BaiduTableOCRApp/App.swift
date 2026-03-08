@@ -941,7 +941,8 @@ final class HotkeyRecorderField: NSTextField {
 final class ToggleSecureInputRow: NSStackView, NSTextFieldDelegate {
     let secureField = NSSecureTextField(string: "")
     let plainField = NSTextField(string: "")
-    let toggleButton = NSButton(title: "👁", target: nil, action: nil)
+    let toggleButton = NSButton(title: "", target: nil, action: nil)
+    private let accessoryButtonWidth: CGFloat = 72
     private(set) var isRevealed = false
     var onChange: ((String) -> Void)?
 
@@ -960,9 +961,14 @@ final class ToggleSecureInputRow: NSStackView, NSTextFieldDelegate {
         plainField.delegate = self
 
         toggleButton.bezelStyle = .rounded
+        toggleButton.controlSize = .large
+        toggleButton.image = NSImage(systemSymbolName: "eye", accessibilityDescription: "显示密钥")
+        toggleButton.imagePosition = .imageOnly
+        toggleButton.contentTintColor = .labelColor
         toggleButton.target = self
         toggleButton.action = #selector(toggleReveal)
         toggleButton.setButtonType(.momentaryPushIn)
+        toggleButton.widthAnchor.constraint(equalToConstant: accessoryButtonWidth).isActive = true
 
         addArrangedSubview(secureField)
         addArrangedSubview(plainField)
@@ -983,7 +989,7 @@ final class ToggleSecureInputRow: NSStackView, NSTextFieldDelegate {
         isRevealed.toggle()
         plainField.isHidden = !isRevealed
         secureField.isHidden = isRevealed
-        toggleButton.title = isRevealed ? "🙈" : "👁"
+        toggleButton.image = NSImage(systemSymbolName: isRevealed ? "eye.slash" : "eye", accessibilityDescription: isRevealed ? "隐藏密钥" : "显示密钥")
         if let window = window {
             window.makeFirstResponder(isRevealed ? plainField : secureField)
         }
@@ -1015,6 +1021,9 @@ final class SettingsWindow: NSWindow {
             return NSApp.sendAction(#selector(NSText.cut(_:)), to: nil, from: self)
         case "a":
             return NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: self)
+        case "w":
+            self.performClose(nil)
+            return true
         default:
             return super.performKeyEquivalent(with: event)
         }
@@ -1073,6 +1082,8 @@ final class SettingsWindowController: NSWindowController, NSTextFieldDelegate {
         saveLabel.widthAnchor.constraint(equalToConstant: 120).isActive = true
         saveDirField.delegate = self
         let browse = NSButton(title: "选择…", target: self, action: #selector(selectDirectory))
+        browse.controlSize = .large
+        browse.widthAnchor.constraint(equalToConstant: 72).isActive = true
         saveRow.addArrangedSubview(saveLabel)
         saveRow.addArrangedSubview(saveDirField)
         saveRow.addArrangedSubview(browse)

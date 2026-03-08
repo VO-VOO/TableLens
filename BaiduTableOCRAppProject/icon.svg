@@ -1,0 +1,92 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradient for Icon Plate -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8f9fa"/>
+      <stop offset="100%" stop-color="#e9ecef"/>
+    </linearGradient>
+
+    <!-- Table Header Gradient -->
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2F80ED"/>
+      <stop offset="100%" stop-color="#56CCF2"/>
+    </linearGradient>
+
+    <!-- Drop Shadow for Table -->
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="15" stdDeviation="15" flood-opacity="0.15"/>
+    </filter>
+
+    <!-- Glow Effect for Laser & Brackets -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Scanning Area Gradient fade out -->
+    <linearGradient id="scanGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00E676" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#00E676" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- App Icon Base Squircle (macOS style) -->
+  <rect width="512" height="512" rx="115" fill="url(#bg)"/>
+  
+  <!-- Document / Table Container -->
+  <g transform="translate(106, 116)" filter="url(#shadow)">
+    <!-- Main Table Background -->
+    <rect width="300" height="280" rx="16" fill="#ffffff"/>
+    
+    <!-- Table Header -->
+    <path d="M 0 16 C 0 7.16 7.16 0 16 0 L 284 0 C 292.84 0 300 7.16 300 16 L 300 64 L 0 64 Z" fill="url(#headerGrad)"/>
+    
+    <!-- Horizontal Grid Lines -->
+    <line x1="0" y1="136" x2="300" y2="136" stroke="#f0f0f0" stroke-width="4"/>
+    <line x1="0" y1="208" x2="300" y2="208" stroke="#f0f0f0" stroke-width="4"/>
+    
+    <!-- Vertical Columns Lines -->
+    <line x1="100" y1="64" x2="100" y2="280" stroke="#f0f0f0" stroke-width="4"/>
+    <line x1="200" y1="64" x2="200" y2="280" stroke="#f0f0f0" stroke-width="4"/>
+    
+    <!-- Header Text Placeholders -->
+    <rect x="24" y="26" width="52" height="12" rx="6" fill="#ffffff" opacity="0.9"/>
+    <rect x="124" y="26" width="52" height="12" rx="6" fill="#ffffff" opacity="0.9"/>
+    <rect x="224" y="26" width="52" height="12" rx="6" fill="#ffffff" opacity="0.9"/>
+
+    <!-- Row 1 Text Placeholders -->
+    <rect x="24" y="94" width="40" height="12" rx="6" fill="#d1d5db"/>
+    <rect x="124" y="94" width="60" height="12" rx="6" fill="#d1d5db"/>
+    <rect x="224" y="94" width="30" height="12" rx="6" fill="#d1d5db"/>
+
+    <!-- Row 2 Text Placeholders -->
+    <rect x="24" y="166" width="50" height="12" rx="6" fill="#d1d5db"/>
+    <rect x="124" y="166" width="40" height="12" rx="6" fill="#d1d5db"/>
+    <rect x="224" y="166" width="50" height="12" rx="6" fill="#d1d5db"/>
+
+    <!-- Row 3 Text Placeholders -->
+    <rect x="24" y="238" width="30" height="12" rx="6" fill="#d1d5db"/>
+    <rect x="124" y="238" width="50" height="12" rx="6" fill="#d1d5db"/>
+    <rect x="224" y="238" width="60" height="12" rx="6" fill="#d1d5db"/>
+  </g>
+
+  <!-- OCR Scanning Brackets (Corner markers) -->
+  <g stroke="#00E676" stroke-width="14" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+    <!-- Top Left -->
+    <path d="M 116 106 L 76 106 L 76 146" />
+    <!-- Top Right -->
+    <path d="M 396 106 L 436 106 L 436 146" />
+    <!-- Bottom Left -->
+    <path d="M 116 406 L 76 406 L 76 366" />
+    <!-- Bottom Right -->
+    <path d="M 396 406 L 436 406 L 436 366" />
+  </g>
+
+  <!-- Scanning Laser Line -->
+  <line x1="60" y1="266" x2="452" y2="266" stroke="#00E676" stroke-width="4" filter="url(#glow)"/>
+  <rect x="60" y="266" width="392" height="70" fill="url(#scanGradient)"/>
+  
+</svg>
