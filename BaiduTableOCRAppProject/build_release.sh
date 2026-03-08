@@ -5,6 +5,7 @@ APP_NAME="BaiduTableOCRApp"
 SRC="$ROOT/BaiduTableOCRApp/App.swift"
 PLIST="$ROOT/BaiduTableOCRApp/Info.plist"
 ICON_SVG="$ROOT/icon.svg"
+MENUBAR_ICON_SVG="$ROOT/MenuBarIconTemplate.svg"
 ICON_BUILD_DIR="$ROOT/.iconbuild"
 BUILD_DIR="$ROOT/build"
 APP="$BUILD_DIR/$APP_NAME.app"
@@ -31,6 +32,10 @@ if [ -f "$ICON_SVG" ]; then
     iconutil -c icns "$ICON_BUILD_DIR/AppIcon.iconset" -o "$ICON_BUILD_DIR/AppIcon.icns"
     cp "$ICON_BUILD_DIR/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
   fi
+fi
+
+if [ -f "$MENUBAR_ICON_SVG" ]; then
+  npx -y sharp-cli     -i "$MENUBAR_ICON_SVG"     -o "$APP/Contents/Resources/MenuBarIconTemplate.png"     --density 288     resize 64 64 >/dev/null 2>&1 || true
 fi
 swiftc "$SRC" \
   -parse-as-library \

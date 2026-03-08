@@ -1334,8 +1334,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupStatusItem() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.title = "表格OCR"
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        if let button = statusItem.button {
+            if let iconURL = Bundle.main.url(forResource: "MenuBarIconTemplate", withExtension: "png"),
+               let image = NSImage(contentsOf: iconURL) {
+                image.isTemplate = true
+                image.size = NSSize(width: 18, height: 18)
+                button.image = image
+                button.imagePosition = .imageOnly
+                button.toolTip = "表格OCR"
+            } else {
+                button.title = "表格OCR"
+            }
+        }
         let menu = NSMenu()
         menu.addItem(NSMenuItem(title: "截图识别", action: #selector(startCapture), keyEquivalent: ""))
         menu.addItem(NSMenuItem(title: "设置…", action: #selector(showSettings), keyEquivalent: ""))
