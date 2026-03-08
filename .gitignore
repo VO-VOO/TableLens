@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Secrets / local config
+.env
+
+# Build artifacts
+*.app/
+baidu_table_ocr_swift
+
+# Generated OCR outputs
+baidu_table_ocr_result.json
+baidu_table_ocr_result.xlsx
+detect_result.txt
+paddleocr_result.txt
+stress_test_report.txt
+stress_test_metrics.json
+ocr_50pct.txt
+ocr_75pct.txt
+ocr_100pct.txt
+scaled_ocr_outputs/
+
+# Swift / Xcode transient files
+.build/
+DerivedData/
