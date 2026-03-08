@@ -14,6 +14,7 @@ targets:
         excludes:
           - Info.plist
           - "**/*.svg"
+          - "**/*.md"
     settings:
       base:
         INFOPLIST_FILE: TableLens/Info.plist
