@@ -273,6 +273,31 @@ final class HotKeyManager {
     }
 }
 
+actor TokenCacheStore {
+    private var cachedToken: String?
+    private var cachedTokenApiKey: String?
+    private var cachedTokenSecretKey: String?
+    private var tokenFetchTime: Date?
+
+    func getValidToken(apiKey: String, secretKey: String, validDuration: TimeInterval) -> String? {
+        guard let token = cachedToken,
+              let fetchTime = tokenFetchTime,
+              cachedTokenApiKey == apiKey,
+              cachedTokenSecretKey == secretKey,
+              Date().timeIntervalSince(fetchTime) < validDuration else {
+            return nil
+        }
+        return token
+    }
+
+    func update(token: String, apiKey: String, secretKey: String) {
+        cachedToken = token
+        cachedTokenApiKey = apiKey
+        cachedTokenSecretKey = secretKey
+        tokenFetchTime = Date()
+    }
+}
+
 final class OCRService {
     static let shared = OCRService()
     private let tokenURL = "https://aip.baidubce.com/oauth/2.0/token"
@@ -287,66 +312,59 @@ final class OCRService {
     }()
 
     // NOTE: 缓存 access_token，百度 token 有效期 30 天，避免每次请求都重新获取
-    private var cachedToken: String?
-    private var cachedTokenApiKey: String?
-    private var cachedTokenSecretKey: String?
-    private var tokenFetchTime: Date?
     private let tokenValidDuration: TimeInterval = 29 * 24 * 3600
-    private let tokenCacheLock = NSLock()
+    private let tokenCache = TokenCacheStore()
 
     func recognizeTable(imageData: Data, settings: AppSettings, completion: @escaping (Result<URL, Error>) -> Void) {
-        DispatchQueue.global(qos: .userInitiated).async {
+        Task.detached(priority: .userInitiated) { [self] in
             do {
-                let accessToken = try self.fetchAccessToken(apiKey: settings.apiKey, secretKey: settings.secretKey)
-                let payload: [String: String] = [
-                    "image": imageData.base64EncodedString(),
-                    "return_excel": "true",
-                    "cell_contents": "true"
-                ]
-                var comps = URLComponents(string: self.tableURL)!
-                comps.queryItems = [URLQueryItem(name: "access_token", value: accessToken)]
-                let json = try self.requestJSON(url: comps.url!, body: payload)
-
-                let saveDir = URL(fileURLWithPath: settings.saveDirectory, isDirectory: true)
-                try FileManager.default.createDirectory(at: saveDir, withIntermediateDirectories: true)
-                let timestamp = Self.timestamp()
-                let jsonURL = saveDir.appendingPathComponent("\(timestamp).json")
-                let excelURL = saveDir.appendingPathComponent("\(timestamp).xlsx")
-
-                if let errorCode = json["error_code"] {
-                    try self.writeJSONLog(json, to: jsonURL)
-                    throw AppFailure.message("Baidu OCR error: \(errorCode) \(json["error_msg"] ?? "")。日志：\(jsonURL.path)")
-                }
-
-                guard let excelBase64 = json["excel_file"] as? String,
-                      let excelData = Data(base64Encoded: excelBase64)
-                else {
-                    try self.writeJSONLog(json, to: jsonURL)
-                    throw AppFailure.message("No excel_file returned. 日志：\(jsonURL.path)")
-                }
-
-                try excelData.write(to: excelURL)
-                DispatchQueue.main.async { completion(.success(excelURL)) }
+                let excelURL = try await self.recognizeTable(imageData: imageData, settings: settings)
+                await MainActor.run { completion(.success(excelURL)) }
             } catch {
-                DispatchQueue.main.async { completion(.failure(error)) }
+                await MainActor.run { completion(.failure(error)) }
             }
         }
     }
 
-    private func fetchAccessToken(apiKey: String, secretKey: String) throws -> String {
+    private func recognizeTable(imageData: Data, settings: AppSettings) async throws -> URL {
+        let accessToken = try await fetchAccessToken(apiKey: settings.apiKey, secretKey: settings.secretKey)
+        let payload: [String: String] = [
+            "image": imageData.base64EncodedString(),
+            "return_excel": "true",
+            "cell_contents": "true",
+        ]
+        var comps = URLComponents(string: self.tableURL)!
+        comps.queryItems = [URLQueryItem(name: "access_token", value: accessToken)]
+        let json = try await requestJSON(url: comps.url!, body: payload)
+
+        let saveDir = URL(fileURLWithPath: settings.saveDirectory, isDirectory: true)
+        try FileManager.default.createDirectory(at: saveDir, withIntermediateDirectories: true)
+        let timestamp = Self.timestamp()
+        let jsonURL = saveDir.appendingPathComponent("\(timestamp).json")
+        let excelURL = saveDir.appendingPathComponent("\(timestamp).xlsx")
+
+        if let errorCode = json["error_code"] {
+            try self.writeJSONLog(json, to: jsonURL)
+            throw AppFailure.message("Baidu OCR error: \(errorCode) \(json["error_msg"] ?? "")。日志：\(jsonURL.path)")
+        }
+
+        guard let excelBase64 = json["excel_file"] as? String,
+              let excelData = Data(base64Encoded: excelBase64)
+        else {
+            try self.writeJSONLog(json, to: jsonURL)
+            throw AppFailure.message("No excel_file returned. 日志：\(jsonURL.path)")
+        }
+
+        try excelData.write(to: excelURL)
+        return excelURL
+    }
+
+    private func fetchAccessToken(apiKey: String, secretKey: String) async throws -> String {
         guard !apiKey.isEmpty, !secretKey.isEmpty else {
             throw AppFailure.message("请先在设置里填写百度 API Key 和 Secret Key。")
         }
 
-        tokenCacheLock.lock()
-        defer { tokenCacheLock.unlock() }
-
-        // NOTE: 当 API Key 不变且缓存未过期时，直接复用已有 token
-        if let token = cachedToken,
-           let fetchTime = tokenFetchTime,
-           cachedTokenApiKey == apiKey,
-           cachedTokenSecretKey == secretKey,
-           Date().timeIntervalSince(fetchTime) < tokenValidDuration {
+        if let token = await tokenCache.getValidToken(apiKey: apiKey, secretKey: secretKey, validDuration: tokenValidDuration) {
             return token
         }
 
@@ -356,49 +374,35 @@ final class OCRService {
             URLQueryItem(name: "client_id", value: apiKey),
             URLQueryItem(name: "client_secret", value: secretKey),
         ]
-        let json = try requestRawJSON(url: comps.url!, method: "POST", headers: ["Content-Type": "application/json"], body: nil)
+        let json = try await requestRawJSON(url: comps.url!, method: "POST", headers: ["Content-Type": "application/json"], body: nil)
         guard let token = json["access_token"] as? String, !token.isEmpty else {
             throw AppFailure.message("获取 access_token 失败。")
         }
-        cachedToken = token
-        cachedTokenApiKey = apiKey
-        cachedTokenSecretKey = secretKey
-        tokenFetchTime = Date()
+
+        await tokenCache.update(token: token, apiKey: apiKey, secretKey: secretKey)
         return token
     }
 
-    private func requestJSON(url: URL, body: [String: String]) throws -> [String: Any] {
+    private func requestJSON(url: URL, body: [String: String]) async throws -> [String: Any] {
         let encoded = body.map { key, value -> String in
             let k = Self.formEncode(key)
             let v = Self.formEncode(value)
             return "\(k)=\(v)"
         }.joined(separator: "&")
-        return try requestRawJSON(url: url, method: "POST", headers: [
+        return try await requestRawJSON(url: url, method: "POST", headers: [
             "Content-Type": "application/x-www-form-urlencoded",
-            "Accept": "application/json"
+            "Accept": "application/json",
         ], body: Data(encoded.utf8))
     }
 
-    private func requestRawJSON(url: URL, method: String, headers: [String: String], body: Data?) throws -> [String: Any] {
-        // FIXME: 信号量同步网络请求不能在主线程调用，否则会死锁
-        assert(!Thread.isMainThread, "requestRawJSON must not be called from the main thread")
+    private func requestRawJSON(url: URL, method: String, headers: [String: String], body: Data?) async throws -> [String: Any] {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.timeoutInterval = 120
         request.httpBody = body
         headers.forEach { request.setValue($1, forHTTPHeaderField: $0) }
 
-        let sema = DispatchSemaphore(value: 0)
-        var resultData: Data?
-        var resultError: Error?
-        session.dataTask(with: request) { data, _, error in
-            resultData = data
-            resultError = error
-            sema.signal()
-        }.resume()
-        sema.wait()
-        if let resultError { throw resultError }
-        guard let resultData else { throw AppFailure.message("网络请求没有返回数据。") }
+        let (resultData, _) = try await session.data(for: request)
         let obj = try JSONSerialization.jsonObject(with: resultData)
         guard let json = obj as? [String: Any] else {
             throw AppFailure.message("接口返回不是 JSON 对象。")
