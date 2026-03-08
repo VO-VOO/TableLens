@@ -292,6 +292,7 @@ final class OCRService {
     private var cachedTokenSecretKey: String?
     private var tokenFetchTime: Date?
     private let tokenValidDuration: TimeInterval = 29 * 24 * 3600
+    private let tokenCacheLock = NSLock()
 
     func recognizeTable(imageData: Data, settings: AppSettings, completion: @escaping (Result<URL, Error>) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
@@ -336,6 +337,10 @@ final class OCRService {
         guard !apiKey.isEmpty, !secretKey.isEmpty else {
             throw AppFailure.message("请先在设置里填写百度 API Key 和 Secret Key。")
         }
+
+        tokenCacheLock.lock()
+        defer { tokenCacheLock.unlock() }
+
         // NOTE: 当 API Key 不变且缓存未过期时，直接复用已有 token
         if let token = cachedToken,
            let fetchTime = tokenFetchTime,
@@ -344,6 +349,7 @@ final class OCRService {
            Date().timeIntervalSince(fetchTime) < tokenValidDuration {
             return token
         }
+
         var comps = URLComponents(string: tokenURL)!
         comps.queryItems = [
             URLQueryItem(name: "grant_type", value: "client_credentials"),
@@ -548,36 +554,40 @@ final class SelectionOverlayView: NSView {
             moved.origin.y = max(0, min(moved.origin.y, bounds.height - moved.height))
             selection = moved
         case .resizing(let handle):
+            let clampedPoint = CGPoint(
+                x: max(0, min(point.x, bounds.width)),
+                y: max(0, min(point.y, bounds.height))
+            )
             guard var rect = Optional(originalSelection) else { return }
             switch handle {
             case .topLeft:
-                rect.origin.x = point.x
-                rect.origin.y = point.y
-                rect.size.width = originalSelection.maxX - point.x
-                rect.size.height = originalSelection.maxY - point.y
+                rect.origin.x = clampedPoint.x
+                rect.origin.y = clampedPoint.y
+                rect.size.width = originalSelection.maxX - clampedPoint.x
+                rect.size.height = originalSelection.maxY - clampedPoint.y
             case .top:
-                rect.origin.y = point.y
-                rect.size.height = originalSelection.maxY - point.y
+                rect.origin.y = clampedPoint.y
+                rect.size.height = originalSelection.maxY - clampedPoint.y
             case .topRight:
-                rect.origin.y = point.y
-                rect.size.height = originalSelection.maxY - point.y
-                rect.size.width = point.x - originalSelection.minX
+                rect.origin.y = clampedPoint.y
+                rect.size.height = originalSelection.maxY - clampedPoint.y
+                rect.size.width = clampedPoint.x - originalSelection.minX
             case .right:
-                rect.size.width = point.x - originalSelection.minX
+                rect.size.width = clampedPoint.x - originalSelection.minX
             case .bottomRight:
-                rect.size.width = point.x - originalSelection.minX
-                rect.size.height = point.y - originalSelection.minY
+                rect.size.width = clampedPoint.x - originalSelection.minX
+                rect.size.height = clampedPoint.y - originalSelection.minY
             case .bottom:
-                rect.size.height = point.y - originalSelection.minY
+                rect.size.height = clampedPoint.y - originalSelection.minY
             case .bottomLeft:
-                rect.origin.x = point.x
-                rect.size.width = originalSelection.maxX - point.x
-                rect.size.height = point.y - originalSelection.minY
+                rect.origin.x = clampedPoint.x
+                rect.size.width = originalSelection.maxX - clampedPoint.x
+                rect.size.height = clampedPoint.y - originalSelection.minY
             case .left:
-                rect.origin.x = point.x
-                rect.size.width = originalSelection.maxX - point.x
+                rect.origin.x = clampedPoint.x
+                rect.size.width = originalSelection.maxX - clampedPoint.x
             }
-            selection = rect.standardized.intersection(bounds)
+            selection = rect.standardized
         case .idle:
             break
         }
