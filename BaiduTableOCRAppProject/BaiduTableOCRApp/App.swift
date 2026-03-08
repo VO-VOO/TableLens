@@ -861,11 +861,94 @@ final class HotkeyRecorderField: NSTextField {
     }
 }
 
+final class ToggleSecureInputRow: NSStackView, NSTextFieldDelegate {
+    let secureField = NSSecureTextField(string: "")
+    let plainField = NSTextField(string: "")
+    let toggleButton = NSButton(title: "👁", target: nil, action: nil)
+    private(set) var isRevealed = false
+    var onChange: ((String) -> Void)?
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        orientation = .horizontal
+        spacing = 8
+
+        secureField.isEditable = true
+        secureField.isSelectable = true
+        plainField.isEditable = true
+        plainField.isSelectable = true
+        plainField.isHidden = true
+
+        secureField.delegate = self
+        plainField.delegate = self
+
+        toggleButton.bezelStyle = .rounded
+        toggleButton.target = self
+        toggleButton.action = #selector(toggleReveal)
+        toggleButton.setButtonType(.momentaryPushIn)
+
+        addArrangedSubview(secureField)
+        addArrangedSubview(plainField)
+        addArrangedSubview(toggleButton)
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    var stringValue: String {
+        get { isRevealed ? plainField.stringValue : secureField.stringValue }
+        set {
+            secureField.stringValue = newValue
+            plainField.stringValue = newValue
+        }
+    }
+
+    @objc private func toggleReveal() {
+        isRevealed.toggle()
+        plainField.isHidden = !isRevealed
+        secureField.isHidden = isRevealed
+        toggleButton.title = isRevealed ? "🙈" : "👁"
+        if let window = window {
+            window.makeFirstResponder(isRevealed ? plainField : secureField)
+        }
+    }
+
+    func controlTextDidChange(_ obj: Notification) {
+        let value = isRevealed ? plainField.stringValue : secureField.stringValue
+        secureField.stringValue = value
+        plainField.stringValue = value
+        onChange?(value)
+    }
+}
+
+final class SettingsWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        guard flags.contains(.command), let chars = event.charactersIgnoringModifiers?.lowercased() else {
+            return super.performKeyEquivalent(with: event)
+        }
+        switch chars {
+        case "v":
+            return NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: self)
+        case "c":
+            return NSApp.sendAction(#selector(NSText.copy(_:)), to: nil, from: self)
+        case "x":
+            return NSApp.sendAction(#selector(NSText.cut(_:)), to: nil, from: self)
+        case "a":
+            return NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: self)
+        default:
+            return super.performKeyEquivalent(with: event)
+        }
+    }
+}
+
 final class SettingsWindowController: NSWindowController, NSTextFieldDelegate {
     var onSettingsChanged: ((AppSettings) -> Void)?
     private var settings: AppSettings
-    private let apiKeyField = NSTextField(string: "")
-    private let secretKeyField = NSSecureTextField(string: "")
+    private let apiKeyRow = ToggleSecureInputRow()
+    private let secretKeyRow = ToggleSecureInputRow()
     private let saveDirField = NSTextField(string: "")
     private let hotkeyField = HotkeyRecorderField(string: "")
     private let hotkeyRecordButton = NSButton(title: "录制", target: nil, action: nil)
@@ -875,7 +958,7 @@ final class SettingsWindowController: NSWindowController, NSTextFieldDelegate {
 
     init(settings: AppSettings) {
         self.settings = settings
-        let window = NSWindow(
+        let window = SettingsWindow(
             contentRect: NSRect(x: 0, y: 0, width: 560, height: 260),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
@@ -903,8 +986,8 @@ final class SettingsWindowController: NSWindowController, NSTextFieldDelegate {
             stack.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -20),
         ])
 
-        stack.addArrangedSubview(makeRow(label: "百度 API Key", field: apiKeyField))
-        stack.addArrangedSubview(makeRow(label: "百度 Secret Key", field: secretKeyField))
+        stack.addArrangedSubview(makeRow(label: "百度 API Key", customView: apiKeyRow))
+        stack.addArrangedSubview(makeRow(label: "百度 Secret Key", customView: secretKeyRow))
 
         let saveRow = NSStackView()
         saveRow.orientation = .horizontal
@@ -959,7 +1042,9 @@ final class SettingsWindowController: NSWindowController, NSTextFieldDelegate {
         statusLabel.stringValue = "点击“录制”，然后直接按新的组合键；不允许无修饰键。"
         stack.addArrangedSubview(statusLabel)
 
-        [apiKeyField, secretKeyField, saveDirField].forEach { $0.delegate = self }
+        saveDirField.delegate = self
+        apiKeyRow.onChange = { [weak self] value in self?.settings.apiKey = value; self?.persistChanges() }
+        secretKeyRow.onChange = { [weak self] value in self?.settings.secretKey = value; self?.persistChanges() }
     }
 
     private func makeLabel(_ text: String) -> NSTextField {
@@ -969,19 +1054,23 @@ final class SettingsWindowController: NSWindowController, NSTextFieldDelegate {
     }
 
     private func makeRow(label text: String, field: NSTextField) -> NSView {
+        makeRow(label: text, customView: field)
+    }
+
+    private func makeRow(label text: String, customView: NSView) -> NSView {
         let row = NSStackView()
         row.orientation = .horizontal
         row.spacing = 10
         let label = makeLabel(text)
         label.widthAnchor.constraint(equalToConstant: 120).isActive = true
         row.addArrangedSubview(label)
-        row.addArrangedSubview(field)
+        row.addArrangedSubview(customView)
         return row
     }
 
     private func fillValues() {
-        apiKeyField.stringValue = settings.apiKey
-        secretKeyField.stringValue = settings.secretKey
+        apiKeyRow.stringValue = settings.apiKey
+        secretKeyRow.stringValue = settings.secretKey
         saveDirField.stringValue = settings.saveDirectory
         hotkeyField.stringValue = hotkeyDisplayString(from: settings.hotkey)
     }
@@ -1022,8 +1111,8 @@ final class SettingsWindowController: NSWindowController, NSTextFieldDelegate {
     }
 
     private func persistChanges() {
-        settings.apiKey = apiKeyField.stringValue
-        settings.secretKey = secretKeyField.stringValue
+        settings.apiKey = apiKeyRow.stringValue
+        settings.secretKey = secretKeyRow.stringValue
         settings.saveDirectory = saveDirField.stringValue.isEmpty ? defaultSaveDirectory.path : saveDirField.stringValue
         let newHotkey = settings.hotkey.isEmpty ? "control+p" : settings.hotkey
         settings.hotkey = newHotkey
@@ -1060,9 +1149,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ensureSaveDirectoryExists()
         setupStatusItem()
         applyHotkey()
-        if settings.apiKey.isEmpty || settings.secretKey.isEmpty {
-            showSettings(nil)
+        checkPermissionsOnLaunch()
+        showSettings(nil)
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showSettings(nil)
+        return true
+    }
+
+    private func checkPermissionsOnLaunch() {
+        Task { [weak self] in
+            do {
+                _ = try await Self.checkScreenCaptureAccess()
+            } catch {
+                await MainActor.run {
+                    self?.showPermissionAlert(String(describing: error))
+                }
+            }
         }
+    }
+
+    private static func checkScreenCaptureAccess() async throws -> Bool {
+        let shareable = try await SCShareableContent.current
+        if shareable.displays.isEmpty {
+            throw AppFailure.message("未检测到可用的屏幕录制权限。请前往“系统设置 → 隐私与安全性 → 屏幕录制”为本 App 授权，然后重启 App。")
+        }
+        return true
     }
 
     private func ensureSaveDirectoryExists() {
@@ -1136,6 +1249,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func quitApp(_ sender: Any?) {
         NSApp.terminate(nil)
+    }
+
+    private func showPermissionAlert(_ message: String) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "需要屏幕录制权限"
+        alert.informativeText = message
+        alert.addButton(withTitle: "打开系统设置")
+        alert.addButton(withTitle: "稍后")
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                NSWorkspace.shared.open(url)
+            }
+        }
     }
 
     private func showError(_ message: String) {
