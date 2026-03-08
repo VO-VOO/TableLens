@@ -2,7 +2,6 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 APP_NAME="TableLens"
-SRC="$ROOT/TableLens/App.swift"
 PLIST="$ROOT/TableLens/Info.plist"
 ICON_SVG="$ROOT/icon.svg"
 MENUBAR_ICON_SVG="$ROOT/MenuBarIconTemplate.svg"
@@ -37,7 +36,9 @@ fi
 if [ -f "$MENUBAR_ICON_SVG" ]; then
   npx -y sharp-cli     -i "$MENUBAR_ICON_SVG"     -o "$APP/Contents/Resources/MenuBarIconTemplate.png"     --density 288     resize 64 64 >/dev/null 2>&1 || true
 fi
-swiftc "$SRC" \
+SOURCES=($(find "$ROOT/TableLens" -name "*.swift" | sort))
+
+swiftc "${SOURCES[@]}" \
   -parse-as-library \
   -o "$APP/Contents/MacOS/$APP_NAME" \
   -framework Cocoa \

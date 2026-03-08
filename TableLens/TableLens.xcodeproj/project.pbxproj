@@ -3,125 +3,218 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A00000000000000000000011 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000001 /* App.swift */; };
+		030245693F610A9CA369067A /* HotKeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28A37AE563BA67B641A2DEA3 /* HotKeyManager.swift */; };
+		0500D358A1F6B9C354CFD662 /* SelectionOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07F8937CF0D583DAD2D930AA /* SelectionOverlayView.swift */; };
+		31A3617BA8D3F95D690BACA7 /* HotkeyDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B46D8504E20EE489CB80A28 /* HotkeyDisplay.swift */; };
+		3F61FFF87E17CE8BD4970E5A /* HotkeyShortcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EFF9A35D17B5223123FFB05 /* HotkeyShortcut.swift */; };
+		3F8D477AB2FF07838182418B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87DD8D1E4640AAF706568189 /* AppDelegate.swift */; };
+		58B753EB1C51A9AE21725162 /* ScreenshotOverlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70A03849F4340C80A21DC3D5 /* ScreenshotOverlayController.swift */; };
+		5E31627FD614496393DF120A /* HotkeyRecorderField.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7AABB4F5101E47BE048C216 /* HotkeyRecorderField.swift */; };
+		6A60D0E10152431414D22FC5 /* ToggleSecureInputRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6B87782DE3F197BA5808A35 /* ToggleSecureInputRow.swift */; };
+		850488AD89025EB6DC09885E /* SettingsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6403D4C32993D32A499A1D07 /* SettingsWindow.swift */; };
+		8AB28777E6AAFF599A6BA5F8 /* SecureSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38AB50AB51F23CF52F7E4E32 /* SecureSettingsStore.swift */; };
+		8F9D691796B6AF154741525C /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AF09D6D5C6D17C9B07D6C83 /* SettingsWindowController.swift */; };
+		907BD50C2AE611430C48F903 /* TableLensMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = D051348E7C88EFD012853B6C /* TableLensMain.swift */; };
+		9C91F256C2A677DC54E33EE0 /* OCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89AA9E4882CB598D57D398E0 /* OCRService.swift */; };
+		A79D7BF729003F922FBDB274 /* NotificationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A853000F9AA7C444E45EE022 /* NotificationHelper.swift */; };
+		FB9D57CD44B1A5AEFC3AF927 /* AppModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D5134FE763E68A29224CB39 /* AppModels.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A00000000000000000000001 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
-		A00000000000000000000002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A00000000000000000000003 /* TableLens.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = TableLens.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		07F8937CF0D583DAD2D930AA /* SelectionOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionOverlayView.swift; sourceTree = "<group>"; };
+		0AF09D6D5C6D17C9B07D6C83 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
+		1EFF9A35D17B5223123FFB05 /* HotkeyShortcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyShortcut.swift; sourceTree = "<group>"; };
+		28A37AE563BA67B641A2DEA3 /* HotKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeyManager.swift; sourceTree = "<group>"; };
+		38AB50AB51F23CF52F7E4E32 /* SecureSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureSettingsStore.swift; sourceTree = "<group>"; };
+		5B46D8504E20EE489CB80A28 /* HotkeyDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyDisplay.swift; sourceTree = "<group>"; };
+		6403D4C32993D32A499A1D07 /* SettingsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindow.swift; sourceTree = "<group>"; };
+		70A03849F4340C80A21DC3D5 /* ScreenshotOverlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotOverlayController.swift; sourceTree = "<group>"; };
+		87DD8D1E4640AAF706568189 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		89AA9E4882CB598D57D398E0 /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
+		9178EF046ACD2A6882177B81 /* TableLens.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TableLens.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9D5134FE763E68A29224CB39 /* AppModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModels.swift; sourceTree = "<group>"; };
+		A853000F9AA7C444E45EE022 /* NotificationHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHelper.swift; sourceTree = "<group>"; };
+		B6B87782DE3F197BA5808A35 /* ToggleSecureInputRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleSecureInputRow.swift; sourceTree = "<group>"; };
+		D051348E7C88EFD012853B6C /* TableLensMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableLensMain.swift; sourceTree = "<group>"; };
+		D7AABB4F5101E47BE048C216 /* HotkeyRecorderField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyRecorderField.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
-/* Begin PBXFrameworksBuildPhase section */
-		A00000000000000000000004 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXFrameworksBuildPhase section */
-
 /* Begin PBXGroup section */
-		A00000000000000000000005 = {
+		214FE10BC639DEE10D62F723 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				A00000000000000000000006 /* TableLens */,
-				A00000000000000000000007 /* Products */,
+				A853000F9AA7C444E45EE022 /* NotificationHelper.swift */,
+				89AA9E4882CB598D57D398E0 /* OCRService.swift */,
+				38AB50AB51F23CF52F7E4E32 /* SecureSettingsStore.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		31239EF99BB81BE0C0CF75D0 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				6403D4C32993D32A499A1D07 /* SettingsWindow.swift */,
+				0AF09D6D5C6D17C9B07D6C83 /* SettingsWindowController.swift */,
+				B6B87782DE3F197BA5808A35 /* ToggleSecureInputRow.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		5B0CF9409C31DD101D59660C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9178EF046ACD2A6882177B81 /* TableLens.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		793C5960E2E75B2070FC0B35 /* Hotkeys */ = {
+			isa = PBXGroup;
+			children = (
+				28A37AE563BA67B641A2DEA3 /* HotKeyManager.swift */,
+				D7AABB4F5101E47BE048C216 /* HotkeyRecorderField.swift */,
+				1EFF9A35D17B5223123FFB05 /* HotkeyShortcut.swift */,
+			);
+			path = Hotkeys;
+			sourceTree = "<group>";
+		};
+		81C5AA799B7F2393EB615379 = {
+			isa = PBXGroup;
+			children = (
+				871F56D395A58D3CFC57F686 /* TableLens */,
+				5B0CF9409C31DD101D59660C /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		A00000000000000000000006 /* TableLens */ = {
+		871F56D395A58D3CFC57F686 /* TableLens */ = {
 			isa = PBXGroup;
 			children = (
-				A00000000000000000000001 /* App.swift */,
-				A00000000000000000000002 /* Info.plist */,
+				D46EB7A3A68EAB878DAE32B6 /* App */,
+				F6A9CD367A499543736500C9 /* Core */,
+				793C5960E2E75B2070FC0B35 /* Hotkeys */,
+				D32524C3B2A8C53733EEE81C /* Screenshot */,
+				214FE10BC639DEE10D62F723 /* Services */,
+				31239EF99BB81BE0C0CF75D0 /* Settings */,
 			);
 			path = TableLens;
 			sourceTree = "<group>";
 		};
-		A00000000000000000000007 /* Products */ = {
+		D32524C3B2A8C53733EEE81C /* Screenshot */ = {
 			isa = PBXGroup;
 			children = (
-				A00000000000000000000003 /* TableLens.app */,
+				70A03849F4340C80A21DC3D5 /* ScreenshotOverlayController.swift */,
+				07F8937CF0D583DAD2D930AA /* SelectionOverlayView.swift */,
 			);
-			name = Products;
+			path = Screenshot;
+			sourceTree = "<group>";
+		};
+		D46EB7A3A68EAB878DAE32B6 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				87DD8D1E4640AAF706568189 /* AppDelegate.swift */,
+				D051348E7C88EFD012853B6C /* TableLensMain.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		F6A9CD367A499543736500C9 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				9D5134FE763E68A29224CB39 /* AppModels.swift */,
+				5B46D8504E20EE489CB80A28 /* HotkeyDisplay.swift */,
+			);
+			path = Core;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A00000000000000000000008 /* TableLens */ = {
+		29DE81454D2B90D9602220B4 /* TableLens */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A00000000000000000000009 /* Build configuration list for PBXNativeTarget "TableLens" */;
+			buildConfigurationList = 6BE20A7A4BCA032D6E4DB125 /* Build configuration list for PBXNativeTarget "TableLens" */;
 			buildPhases = (
-				A0000000000000000000000A /* Sources */,
-				A00000000000000000000004 /* Frameworks */,
+				35E2DCAF5EFE101CD160530B /* Sources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			name = TableLens;
+			packageProductDependencies = (
+			);
 			productName = TableLens;
-			productReference = A00000000000000000000003 /* TableLens.app */;
+			productReference = 9178EF046ACD2A6882177B81 /* TableLens.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		A0000000000000000000000B /* Project object */ = {
+		FCFBCA69ADB7F7090C01E95C /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1600;
-				LastUpgradeCheck = 1600;
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
 				TargetAttributes = {
-					A00000000000000000000008 = {
-						CreatedOnToolsVersion = 16.0;
+					29DE81454D2B90D9602220B4 = {
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
-			buildConfigurationList = A0000000000000000000000C /* Build configuration list for PBXProject "TableLens" */;
-			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = zh_CN;
+			buildConfigurationList = 4BB26B302CDE46AF02491AE3 /* Build configuration list for PBXProject "TableLens" */;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				zh_CN,
 				Base,
+				en,
 			);
-			mainGroup = A00000000000000000000005;
-			productRefGroup = A00000000000000000000007 /* Products */;
+			mainGroup = 81C5AA799B7F2393EB615379;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 5B0CF9409C31DD101D59660C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A00000000000000000000008 /* TableLens */,
+				29DE81454D2B90D9602220B4 /* TableLens */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A0000000000000000000000A /* Sources */ = {
+		35E2DCAF5EFE101CD160530B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A00000000000000000000011 /* App.swift in Sources */,
+				3F8D477AB2FF07838182418B /* AppDelegate.swift in Sources */,
+				FB9D57CD44B1A5AEFC3AF927 /* AppModels.swift in Sources */,
+				030245693F610A9CA369067A /* HotKeyManager.swift in Sources */,
+				31A3617BA8D3F95D690BACA7 /* HotkeyDisplay.swift in Sources */,
+				5E31627FD614496393DF120A /* HotkeyRecorderField.swift in Sources */,
+				3F61FFF87E17CE8BD4970E5A /* HotkeyShortcut.swift in Sources */,
+				A79D7BF729003F922FBDB274 /* NotificationHelper.swift in Sources */,
+				9C91F256C2A677DC54E33EE0 /* OCRService.swift in Sources */,
+				58B753EB1C51A9AE21725162 /* ScreenshotOverlayController.swift in Sources */,
+				8AB28777E6AAFF599A6BA5F8 /* SecureSettingsStore.swift in Sources */,
+				0500D358A1F6B9C354CFD662 /* SelectionOverlayView.swift in Sources */,
+				850488AD89025EB6DC09885E /* SettingsWindow.swift in Sources */,
+				8F9D691796B6AF154741525C /* SettingsWindowController.swift in Sources */,
+				907BD50C2AE611430C48F903 /* TableLensMain.swift in Sources */,
+				6A60D0E10152431414D22FC5 /* ToggleSecureInputRow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		A0000000000000000000000D /* Debug */ = {
+		4B1E73D2C1B54D02E9140B61 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = TableLens/Info.plist;
@@ -129,18 +222,72 @@
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = local.utolaris.TableLens;
-				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
-		A0000000000000000000000E /* Release */ = {
+		5D011DDFD539D40EEB2D4CF9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		7DF6BC5674244A6FAA44CA99 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = TableLens/Info.plist;
@@ -148,54 +295,95 @@
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = local.utolaris.TableLens;
-				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
-		A0000000000000000000000F /* Debug */ = {
+		8D8F2A92B895294C3AD34842 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
-		};
-		A00000000000000000000010 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ENABLE_MODULES = YES;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				SDKROOT = macosx;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A0000000000000000000000C /* Build configuration list for PBXProject "TableLens" */ = {
+		4BB26B302CDE46AF02491AE3 /* Build configuration list for PBXProject "TableLens" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A0000000000000000000000F /* Debug */,
-				A00000000000000000000010 /* Release */,
+				8D8F2A92B895294C3AD34842 /* Debug */,
+				5D011DDFD539D40EEB2D4CF9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
-		A00000000000000000000009 /* Build configuration list for PBXNativeTarget "TableLens" */ = {
+		6BE20A7A4BCA032D6E4DB125 /* Build configuration list for PBXNativeTarget "TableLens" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A0000000000000000000000D /* Debug */,
-				A0000000000000000000000E /* Release */,
+				4B1E73D2C1B54D02E9140B61 /* Debug */,
+				7DF6BC5674244A6FAA44CA99 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = A0000000000000000000000B /* Project object */;
+	rootObject = FCFBCA69ADB7F7090C01E95C /* Project object */;
 }
